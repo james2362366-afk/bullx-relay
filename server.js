@@ -114,3 +114,9 @@ setInterval(fetchTwelveData, 1800);
 fetchCrypto();
 setTimeout(fetchStocks, 1000);
 setTimeout(fetchTwelveData, 2000);
+// 🚀 ANTI-SLEEP SELF-PING ENGINE
+setInterval(() => {
+    axios.get('https://bullx-relay.onrender.com')
+    .then(() => console.log("☕ Server Self-Ping: Staying Awake!"))
+    .catch((e) => console.log("⚠️ Self-Ping Failed, but UptimeRobot is guarding."));
+}, 240000); // हर 4 मिनट में खुद को कॉल करेगा
