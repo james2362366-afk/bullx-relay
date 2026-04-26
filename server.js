@@ -6,11 +6,11 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 app.get('/', (req, res) => {
-    res.send('BullX Ultra Relay is LIVE! 🚀 (100% Perfect Match Edition)');
+    res.send('BullX Quad-Engine Server is LIVE! 🚀 (Zero Delay Edition)');
 });
 
 const server = app.listen(port, () => {
-    console.log(`🚀 BullX Ultra Server running on port ${port}`);
+    console.log(`🚀 BullX Master Server running on port ${port}`);
 });
 
 const wss = new WebSocketServer({ server });
@@ -20,6 +20,7 @@ let connectedClients = 0;
 
 wss.on('connection', (ws) => {
     connectedClients++;
+    // कनेक्ट होते ही तुरंत सारा डेटा भेज दो
     if (Object.keys(globalCache).length > 0) ws.send(JSON.stringify(globalCache));
     ws.on('close', () => { connectedClients--; });
 });
@@ -32,7 +33,7 @@ function broadcast() {
 }
 
 // ============================================================================
-// 🚀 ENGINE 1: BINANCE (Crypto - 100% Match, Superfast)
+// 🟢 ENGINE 1: BINANCE (CRYPTO - 1.5 Seconds)
 // ============================================================================
 async function fetchCrypto() {
     try {
@@ -44,14 +45,14 @@ async function fetchCrypto() {
             };
         });
         broadcast();
-    } catch (e) { console.log("⚠️ Binance Sync Delayed"); }
+    } catch (e) { console.log("⚠️ Binance Sync Error"); }
 }
 
 // ============================================================================
-// 🌟 ENGINE 2: FINNHUB (50 Premium US Stocks - 100% Match)
+// 🌟 ENGINE 2: FINNHUB (US STOCKS - 1.2 Seconds)
 // ============================================================================
 const FINNHUB_KEY = "d7n3sspr01qppri3f170d7n3sspr01qppri3f17g";
-const stocks = ["AAPL","MSFT","NVDA","TSLA","AMZN","META","GOOGL","NFLX","AMD","INTC","PLTR","COIN","MSTR","ARM","SMCI","QCOM","AVGO","CRM","ADBE","ORCL","IBM","CSCO","UBER","ABNB","V","MA","PYPL","SQ","JPM","BAC","GS","WMT","COST","HD","NKE","KO","PEP","MCD","SBUX","DIS","BA","CAT","GE","F","GM","XOM","CVX","JNJ","PFE","LLY"];
+const stocks = ["AAPL","MSFT","NVDA","TSLA","AMZN","META","GOOGL","NFLX","AMD","INTC","COIN","MSTR"];
 let stockIdx = 0;
 
 async function fetchStocks() {
@@ -67,7 +68,7 @@ async function fetchStocks() {
 }
 
 // ============================================================================
-// 🔥 ENGINE 3: TWELVE DATA (Pure Forex, Major Metals, Global Indices)
+// 🔥 ENGINE 3: TWELVE DATA (FOREX & GOLD - 8 KEYS ROTATION)
 // ============================================================================
 const tdKeys = [
     "4889b07c8f1b4b53813b93584de81302", "ec68e93899bb498fabc8d50ab43ffb6a",
@@ -75,19 +76,11 @@ const tdKeys = [
     "3b7656b7aa5a41e88ac386fd66e0031b", "e242a4be64404336a644dca4386f35ea",
     "500fb6eeb4a94e9a8d92be7b2f1b4872", "ffdf5fe164c446318e975387c354d295"
 ];
-let tdKIdx = 0;
-let tdAIdx = 0;
-
-// 🧹 Cleaned & Filtered List: Sirf 100% Reliable Data!
+let tdKIdx = 0; let tdAIdx = 0;
 const tdAssets = [
-    // All 50 Forex (Very Reliable)
-    { s: "EURUSD", a: "EUR/USD" }, { s: "GBPUSD", a: "GBP/USD" }, { s: "USDJPY", a: "USD/JPY" }, { s: "AUDUSD", a: "AUD/USD" }, { s: "USDCAD", a: "USD/CAD" }, { s: "USDCHF", a: "USD/CHF" }, { s: "NZDUSD", a: "NZD/USD" }, { s: "EURJPY", a: "EUR/JPY" }, { s: "EURGBP", a: "EUR/GBP" }, { s: "EURAUD", a: "EUR/AUD" }, { s: "EURCAD", a: "EUR/CAD" }, { s: "EURCHF", a: "EUR/CHF" }, { s: "EURNZD", a: "EUR/NZD" }, { s: "GBPJPY", a: "GBP/JPY" }, { s: "GBPAUD", a: "GBP/AUD" }, { s: "GBPCAD", a: "GBP/CAD" }, { s: "GBPCHF", a: "GBP/CHF" }, { s: "GBPNZD", a: "GBP/NZD" }, { s: "AUDJPY", a: "AUD/JPY" }, { s: "AUDCAD", a: "AUD/CAD" }, { s: "AUDCHF", a: "AUD/CHF" }, { s: "AUDNZD", a: "AUD/NZD" }, { s: "CADJPY", a: "CAD/JPY" }, { s: "CADCHF", a: "CAD/CHF" }, { s: "CHFJPY", a: "CHF/JPY" }, { s: "NZDJPY", a: "NZD/JPY" }, { s: "NZDCAD", a: "NZD/CAD" }, { s: "NZDCHF", a: "NZD/CHF" }, { s: "USDZAR", a: "USD/ZAR" }, { s: "USDMXN", a: "USD/MXN" }, { s: "USDTRY", a: "USD/TRY" }, { s: "USDSEK", a: "USD/SEK" }, { s: "USDNOK", a: "USD/NOK" }, { s: "USDDKK", a: "USD/DKK" }, { s: "USDHKD", a: "USD/HKD" }, { s: "USDSGD", a: "USD/SGD" }, { s: "USDCNH", a: "USD/CNH" }, { s: "USDINR", a: "USD/INR" }, { s: "USDKRW", a: "USD/KRW" }, { s: "USDTHB", a: "USD/THB" }, { s: "USDIDR", a: "USD/IDR" }, { s: "USDPLN", a: "USD/PLN" }, { s: "USDBRL", a: "USD/BRL" }, { s: "USDHUF", a: "USD/HUF" }, { s: "USDCZK", a: "USD/CZK" }, { s: "USDCLP", a: "USD/CLP" }, { s: "USDILS", a: "USD/ILS" }, { s: "USDCOP", a: "USD/COP" }, { s: "USDPEN", a: "USD/PEN" }, { s: "USDTWD", a: "USD/TWD" },
-
-    // Core Premium Metals & Energy (Reliable)
-    { s: "XAUUSD", a: "XAU/USD" }, { s: "XAGUSD", a: "XAG/USD" }, { s: "XPTUSD", a: "XPT/USD" }, { s: "XPDUSD", a: "XPD/USD" }, { s: "COPPER", a: "HG" }, { s: "USOIL", a: "CL" }, { s: "UKOIL", a: "LCO" }, { s: "NATGAS", a: "NG" },
-
-    // Major Global Indices (Reliable)
-    { s: "SPX500", a: "SPX" }, { s: "NDX100", a: "NDX" }, { s: "US30", a: "DJI" }, { s: "VIX", a: "VIX" }, { s: "RUT2000", a: "RUT" }, { s: "UK100", a: "FTSE" }, { s: "GER40", a: "DAX" }, { s: "JPN225", a: "NI225" }, { s: "HK50", a: "HSI" }
+    { s: "EURUSD", a: "EUR/USD" }, { s: "GBPUSD", a: "GBP/USD" }, { s: "USDJPY", a: "USD/JPY" },
+    { s: "AUDUSD", a: "AUD/USD" }, { s: "USDCAD", a: "USD/CAD" }, { s: "USDCHF", a: "USD/CHF" },
+    { s: "NZDUSD", a: "NZD/USD" }, { s: "XAUUSD", a: "XAU/USD" }
 ];
 
 async function fetchTwelveData() {
@@ -97,7 +90,6 @@ async function fetchTwelveData() {
         if (res.data.close) {
             globalCache[asset.s] = { price: parseFloat(res.data.close), change: parseFloat(res.data.percent_change || 0) };
             broadcast();
-            console.log(`💎 Premium Sync [Key ${tdKIdx + 1}]: ${asset.s}`);
         }
     } catch (e) {}
     finally {
@@ -106,17 +98,53 @@ async function fetchTwelveData() {
     }
 }
 
-// 🚀 RUN ALL ENGINES
+// ============================================================================
+// 🎯 ENGINE 4: YAHOO FINANCE (SILVER, OIL, INDICES - 3 Seconds Batch Fetch)
+// ============================================================================
+const yahooMap = [
+    { s: "XAGUSD", y: "SI=F" },     // Silver
+    { s: "USOIL", y: "CL=F" },      // WTI Oil
+    { s: "UKOIL", y: "BZ=F" },      // Brent Oil
+    { s: "SPX500", y: "^GSPC" },    // S&P 500
+    { s: "NDX100", y: "^IXIC" },    // NASDAQ
+    { s: "US30", y: "^DJI" },       // Dow Jones
+    { s: "VIX", y: "^VIX" },        // Volatility Index
+    { s: "UK100", y: "^FTSE" },     // FTSE
+    { s: "GER40", y: "^GDAXI" }     // DAX
+];
+
+async function fetchYahoo() {
+    const symbolsStr = yahooMap.map(x => x.y).join(',');
+    try {
+        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
+        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const data = res.data.quoteResponse.result;
+
+        data.forEach(item => {
+            const match = yahooMap.find(x => x.y === item.symbol);
+            if (match) {
+                globalCache[match.s] = {
+                    price: parseFloat(item.regularMarketPrice || 0),
+                    change: parseFloat(item.regularMarketChangePercent || 0)
+                };
+            }
+        });
+        broadcast();
+    } catch (e) {}
+}
+
+// 🚀 RUN ALL 4 ENGINES AT FULL SPEED
 setInterval(fetchCrypto, 1500);
 setInterval(fetchStocks, 1200);
 setInterval(fetchTwelveData, 1800);
+setInterval(fetchYahoo, 3000); // Yahoo batched every 3 seconds
+
+// 🚀 ANTI-SLEEP PING (ताकि Render कभी सोए ना)
+setInterval(() => {
+    axios.get('https://bullx-relay.onrender.com').catch(() => {});
+}, 240000);
 
 fetchCrypto();
-setTimeout(fetchStocks, 1000);
-setTimeout(fetchTwelveData, 2000);
-// 🚀 ANTI-SLEEP SELF-PING ENGINE
-setInterval(() => {
-    axios.get('https://bullx-relay.onrender.com')
-    .then(() => console.log("☕ Server Self-Ping: Staying Awake!"))
-    .catch((e) => console.log("⚠️ Self-Ping Failed, but UptimeRobot is guarding."));
-}, 240000); // हर 4 मिनट में खुद को कॉल करेगा
+setTimeout(fetchStocks, 500);
+setTimeout(fetchTwelveData, 1000);
+setTimeout(fetchYahoo, 1500);
