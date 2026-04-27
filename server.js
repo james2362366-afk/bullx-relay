@@ -5,8 +5,20 @@ const axios = require('axios');
 const app = express();
 const port = process.env.PORT || 8080;
 
+// 🔥 CORS ERROR BYPASS (तेरा सर्वर खुद वेब ऐप को अलाउ करेगा)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
+
 app.get('/', (req, res) => {
     res.send('BullX Quad-Engine Server is LIVE! 🚀 (Zero Delay Edition)');
+});
+
+// 🚀 NEW: DIRECT API FOR FLUTTER FRONTEND (No corsproxy needed anymore!)
+app.get('/api/data', (req, res) => {
+    res.json(globalCache);
 });
 
 const server = app.listen(port, () => {
@@ -20,7 +32,6 @@ let connectedClients = 0;
 
 wss.on('connection', (ws) => {
     connectedClients++;
-    // कनेक्ट होते ही तुरंत सारा डेटा भेज दो
     if (Object.keys(globalCache).length > 0) ws.send(JSON.stringify(globalCache));
     ws.on('close', () => { connectedClients--; });
 });
@@ -33,11 +44,12 @@ function broadcast() {
 }
 
 // ============================================================================
-// 🟢 ENGINE 1: BINANCE (CRYPTO - 1.5 Seconds)
+// 🟢 ENGINE 1: BINANCE VISION (Bypasses Render IP Blocks)
 // ============================================================================
 async function fetchCrypto() {
     try {
-        const res = await axios.get('https://api.binance.com/api/v3/ticker/24hr');
+        // 🔥 Binance Vision API (Never Blocks Cloud IPs)
+        const res = await axios.get('https://data-api.binance.vision/api/v3/ticker/24hr');
         res.data.forEach(coin => {
             globalCache[coin.symbol] = {
                 price: parseFloat(coin.lastPrice),
@@ -45,11 +57,20 @@ async function fetchCrypto() {
             };
         });
         broadcast();
-    } catch (e) { console.log("⚠️ Binance Sync Error"); }
+    } catch (e) {
+        console.log("⚠️ Vision API Error, Trying Fallback...");
+        try {
+            const fallback = await axios.get('https://api1.binance.com/api/v3/ticker/24hr');
+            fallback.data.forEach(coin => {
+                globalCache[coin.symbol] = { price: parseFloat(coin.lastPrice), change: parseFloat(coin.priceChangePercent) };
+            });
+            broadcast();
+        } catch(e2) { console.log("❌ All Crypto APIs Failed"); }
+    }
 }
 
 // ============================================================================
-// 🌟 ENGINE 2: FINNHUB (US STOCKS - 1.2 Seconds)
+// 🌟 ENGINE 2: FINNHUB (US STOCKS)
 // ============================================================================
 const FINNHUB_KEY = "d7n3sspr01qppri3f170d7n3sspr01qppri3f17g";
 const stocks = ["AAPL","MSFT","NVDA","TSLA","AMZN","META","GOOGL","NFLX","AMD","INTC","COIN","MSTR"];
@@ -68,20 +89,11 @@ async function fetchStocks() {
 }
 
 // ============================================================================
-// 🔥 ENGINE 3: TWELVE DATA (FOREX & GOLD - 8 KEYS ROTATION)
+// 🔥 ENGINE 3: TWELVE DATA (FOREX & GOLD)
 // ============================================================================
-const tdKeys = [
-    "4889b07c8f1b4b53813b93584de81302", "ec68e93899bb498fabc8d50ab43ffb6a",
-    "574d5d034591482e9b244670fbf2fb8a", "a60313621cd34e3db6ee2f81ef6f8044",
-    "3b7656b7aa5a41e88ac386fd66e0031b", "e242a4be64404336a644dca4386f35ea",
-    "500fb6eeb4a94e9a8d92be7b2f1b4872", "ffdf5fe164c446318e975387c354d295"
-];
+const tdKeys = ["4889b07c8f1b4b53813b93584de81302", "ec68e93899bb498fabc8d50ab43ffb6a", "574d5d034591482e9b244670fbf2fb8a", "a60313621cd34e3db6ee2f81ef6f8044"];
 let tdKIdx = 0; let tdAIdx = 0;
-const tdAssets = [
-    { s: "EURUSD", a: "EUR/USD" }, { s: "GBPUSD", a: "GBP/USD" }, { s: "USDJPY", a: "USD/JPY" },
-    { s: "AUDUSD", a: "AUD/USD" }, { s: "USDCAD", a: "USD/CAD" }, { s: "USDCHF", a: "USD/CHF" },
-    { s: "NZDUSD", a: "NZD/USD" }, { s: "XAUUSD", a: "XAU/USD" }
-];
+const tdAssets = [{ s: "EURUSD", a: "EUR/USD" }, { s: "GBPUSD", a: "GBP/USD" }, { s: "USDJPY", a: "USD/JPY" }, { s: "AUDUSD", a: "AUD/USD" }, { s: "XAUUSD", a: "XAU/USD" }];
 
 async function fetchTwelveData() {
     const asset = tdAssets[tdAIdx];
@@ -99,52 +111,28 @@ async function fetchTwelveData() {
 }
 
 // ============================================================================
-// 🎯 ENGINE 4: YAHOO FINANCE (SILVER, OIL, INDICES - 3 Seconds Batch Fetch)
+// 🎯 ENGINE 4: YAHOO FINANCE (SILVER, OIL, INDICES)
 // ============================================================================
-const yahooMap = [
-    { s: "XAGUSD", y: "SI=F" },     // Silver
-    { s: "USOIL", y: "CL=F" },      // WTI Oil
-    { s: "UKOIL", y: "BZ=F" },      // Brent Oil
-    { s: "SPX500", y: "^GSPC" },    // S&P 500
-    { s: "NDX100", y: "^IXIC" },    // NASDAQ
-    { s: "US30", y: "^DJI" },       // Dow Jones
-    { s: "VIX", y: "^VIX" },        // Volatility Index
-    { s: "UK100", y: "^FTSE" },     // FTSE
-    { s: "GER40", y: "^GDAXI" }     // DAX
-];
+const yahooMap = [{ s: "XAGUSD", y: "SI=F" }, { s: "USOIL", y: "CL=F" }, { s: "UKOIL", y: "BZ=F" }, { s: "SPX500", y: "^GSPC" }, { s: "NDX100", y: "^IXIC" }, { s: "US30", y: "^DJI" }, { s: "VIX", y: "^VIX" }];
 
 async function fetchYahoo() {
     const symbolsStr = yahooMap.map(x => x.y).join(',');
     try {
         const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-        const data = res.data.quoteResponse.result;
-
-        data.forEach(item => {
+        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } });
+        res.data.quoteResponse.result.forEach(item => {
             const match = yahooMap.find(x => x.y === item.symbol);
-            if (match) {
-                globalCache[match.s] = {
-                    price: parseFloat(item.regularMarketPrice || 0),
-                    change: parseFloat(item.regularMarketChangePercent || 0)
-                };
-            }
+            if (match) globalCache[match.s] = { price: parseFloat(item.regularMarketPrice || 0), change: parseFloat(item.regularMarketChangePercent || 0) };
         });
         broadcast();
     } catch (e) {}
 }
 
-// 🚀 RUN ALL 4 ENGINES AT FULL SPEED
 setInterval(fetchCrypto, 1500);
 setInterval(fetchStocks, 1200);
 setInterval(fetchTwelveData, 1800);
-setInterval(fetchYahoo, 3000); // Yahoo batched every 3 seconds
+setInterval(fetchYahoo, 3000);
 
-// 🚀 ANTI-SLEEP PING (ताकि Render कभी सोए ना)
-setInterval(() => {
-    axios.get('https://bullx-relay.onrender.com').catch(() => {});
-}, 240000);
+setInterval(() => { axios.get('https://bullx-relay.onrender.com').catch(() => {}); }, 240000);
 
-fetchCrypto();
-setTimeout(fetchStocks, 500);
-setTimeout(fetchTwelveData, 1000);
-setTimeout(fetchYahoo, 1500);
+fetchCrypto(); setTimeout(fetchStocks, 500); setTimeout(fetchTwelveData, 1000); setTimeout(fetchYahoo, 1500);
