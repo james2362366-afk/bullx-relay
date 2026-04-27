@@ -1,6 +1,6 @@
 const express = require('express');
 const { WebSocketServer } = require('ws');
-const WebSocket = require('ws');
+const WebSocket = require('ws'); // 🔥 Binance के लाइव सॉकेट के लिए
 const axios = require('axios');
 
 const app = express();
@@ -13,18 +13,12 @@ const wss = new WebSocketServer({ server });
 
 let globalCache = {};
 
-// ===============================
-// 🔥 SEND CACHE ON CONNECT
-// ===============================
+// जब भी कोई ऐप खुले, उसे तुरंत कैशे भेज दो
 wss.on('connection', (ws) => {
-    if (Object.keys(globalCache).length > 0) {
-        ws.send(JSON.stringify(globalCache));
-    }
+    if (Object.keys(globalCache).length > 0) ws.send(JSON.stringify(globalCache));
 });
 
-// ===============================
-// 🚀 BROADCAST ENGINE
-// ===============================
+// 🚀 BROADCAST ENGINE: ऐप को क्रैश होने से बचाने के लिए हर 1 सेकंड में सारा भाव एक साथ भेजेंगे
 setInterval(() => {
     if (Object.keys(globalCache).length > 0 && wss.clients.size > 0) {
         const payload = JSON.stringify(globalCache);
@@ -34,9 +28,9 @@ setInterval(() => {
     }
 }, 1000);
 
-// ===============================
-// 🟢 BINANCE (CRYPTO - PERFECT)
-// ===============================
+// ============================================================================
+// 🟢 ENGINE 1: BINANCE DIRECT WEBSOCKET (0% Delay, 0% IP Block)
+// ============================================================================
 function startBinanceWS() {
     const binanceWs = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');
 
@@ -44,113 +38,58 @@ function startBinanceWS() {
         try {
             const tickers = JSON.parse(data);
             tickers.forEach(t => {
-                const price = Number(t.c);
-                const change = Number(t.P);
-
-                if (!isNaN(price)) {
-                    globalCache[t.s] = {
-                        price: price,
-                        change: isNaN(change) ? 0 : change
-                    };
-                }
+                // t.s = symbol, t.c = last price, t.P = price change percent
+                globalCache[t.s] = { price: parseFloat(t.c), change: parseFloat(t.P) };
             });
-        } catch (e) {
-            console.log("Binance Parse Error:", e.message);
-        }
+        } catch (e) {}
     });
 
     binanceWs.on('close', () => setTimeout(startBinanceWS, 2000));
-    binanceWs.on('error', (e) => console.log("Binance WS Error:", e.message));
+    binanceWs.on('error', () => {});
 }
 startBinanceWS();
 
-// ===============================
-// 🎯 TRADINGVIEW (FIXED)
-// ===============================
+// ============================================================================
+// 🎯 ENGINE 2: TRADINGVIEW (FOREX, METALS, INDICES) - अलग-अलग स्कैनर
+// ============================================================================
 const forexMap = {
-    "FX:EURUSD": "EURUSD",
-    "FX:GBPUSD": "GBPUSD",
-    "FX:USDJPY": "USDJPY",
-    "FX:AUDUSD": "AUDUSD",
-    "FX:USDCAD": "USDCAD",
-    "FX:USDCHF": "USDCHF",
-    "FX:NZDUSD": "NZDUSD"
+    "FX:EURUSD": "EURUSD", "FX:GBPUSD": "GBPUSD", "FX:USDJPY": "USDJPY",
+    "FX:AUDUSD": "AUDUSD", "FX:USDCAD": "USDCAD", "FX:USDCHF": "USDCHF", "FX:NZDUSD": "NZDUSD"
 };
 
 const cfdMap = {
-    "OANDA:XAUUSD": "XAUUSD",
-    "OANDA:XAGUSD": "XAGUSD",
-    "TVC:USOIL": "USOIL",
-    "TVC:UKOIL": "UKOIL",
-    "CAPITALCOM:US500": "SPX500",
-    "CAPITALCOM:US100": "NDX100",
-    "CAPITALCOM:US30": "US30",
-    "TVC:VIX": "VIX",
-    "CAPITALCOM:UK100": "UK100",
-    "CAPITALCOM:DE40": "GER40"
+    "OANDA:XAUUSD": "XAUUSD", "OANDA:XAGUSD": "XAGUSD", "TVC:USOIL": "USOIL", "TVC:UKOIL": "UKOIL",
+    "CAPITALCOM:US500": "SPX500", "CAPITALCOM:US100": "NDX100", "CAPITALCOM:US30": "US30",
+    "TVC:VIX": "VIX", "CAPITALCOM:UK100": "UK100", "CAPITALCOM:DE40": "GER40"
 };
 
 async function fetchTradingView() {
     try {
         const [resForex, resCfd] = await Promise.all([
-            axios.post('https://scanner.tradingview.com/forex/scan', {
-                symbols: { tickers: Object.keys(forexMap) },
-                columns: ["close", "change"]
-            }),
-            axios.post('https://scanner.tradingview.com/cfd/scan', {
-                symbols: { tickers: Object.keys(cfdMap) },
-                columns: ["close", "change"]
-            })
+            axios.post('https://scanner.tradingview.com/forex/scan', { symbols: { tickers: Object.keys(forexMap) }, columns: ["close", "change"] }),
+            axios.post('https://scanner.tradingview.com/cfd/scan', { symbols: { tickers: Object.keys(cfdMap) }, columns: ["close", "change"] })
         ]);
 
-        // FOREX
-        if (resForex.data?.data) {
+        if (resForex.data && resForex.data.data) {
             resForex.data.data.forEach(item => {
                 const sym = forexMap[item.s];
-                if (sym && item.d && item.d[0] != null) {
-                    const price = Number(item.d[0]);
-                    const change = Number(item.d[1]);
-
-                    if (!isNaN(price)) {
-                        globalCache[sym] = {
-                            price: price,
-                            change: isNaN(change) ? 0 : change
-                        };
-                    }
-                }
+                if (sym && item.d) globalCache[sym] = { price: parseFloat(item.d[0]), change: parseFloat(item.d[1]) };
             });
         }
-
-        // CFD
-        if (resCfd.data?.data) {
+        if (resCfd.data && resCfd.data.data) {
             resCfd.data.data.forEach(item => {
                 const sym = cfdMap[item.s];
-                if (sym && item.d && item.d[0] != null) {
-                    const price = Number(item.d[0]);
-                    const change = Number(item.d[1]);
-
-                    if (!isNaN(price)) {
-                        globalCache[sym] = {
-                            price: price,
-                            change: isNaN(change) ? 0 : change
-                        };
-                    }
-                }
+                if (sym && item.d) globalCache[sym] = { price: parseFloat(item.d[0]), change: parseFloat(item.d[1]) };
             });
         }
-
-    } catch (e) {
-        console.log("TradingView Error:", e.message);
-    }
+    } catch (e) {}
 }
+setInterval(fetchTradingView, 2000);
 
-// 🔥 interval slow kiya (block avoid)
-setInterval(fetchTradingView, 5000);
-
-// ===============================
-// 🌟 FINNHUB (STOCKS - FIXED)
-// ===============================
-const FINNHUB_KEY = "YOUR_API_KEY"; // 🔥 apna key daal
+// ============================================================================
+// 🌟 ENGINE 3: FINNHUB (US STOCKS)
+// ============================================================================
+const FINNHUB_KEY = "d7n3sspr01qppri3f170d7n3sspr01qppri3f17g";
 const stocks = ["AAPL","MSFT","NVDA","TSLA","AMZN","META","GOOGL","NFLX","AMD","INTC","COIN","MSTR"];
 let stockIdx = 0;
 
@@ -158,32 +97,11 @@ async function fetchStocks() {
     try {
         const symbol = stocks[stockIdx];
         const res = await axios.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
-
-        if (res.data && res.data.c != null) {
-            const price = Number(res.data.c);
-            const change = Number(res.data.dp);
-
-            if (!isNaN(price)) {
-                globalCache[symbol] = {
-                    price: price,
-                    change: isNaN(change) ? 0 : change
-                };
-            }
-        }
-
-    } catch (e) {
-        console.log("Finnhub Error:", e.message);
-    } finally {
-        stockIdx = (stockIdx + 1) % stocks.length;
-    }
+        if (res.data.c) globalCache[symbol] = { price: parseFloat(res.data.c), change: parseFloat(res.data.dp || 0) };
+    } catch (e) {}
+    finally { stockIdx = (stockIdx + 1) % stocks.length; }
 }
+setInterval(fetchStocks, 1200);
 
-// 🔥 rate safe
-setInterval(fetchStocks, 2000);
-
-// ===============================
-// 🛑 ANTI-SLEEP (Render)
-// ===============================
-setInterval(() => {
-    axios.get('https://bullx-relay.onrender.com').catch(() => {});
-}, 240000);
+// 🚀 ANTI-SLEEP PING
+setInterval(() => { axios.get('https://bullx-relay.onrender.com').catch(() => {}); }, 240000);
